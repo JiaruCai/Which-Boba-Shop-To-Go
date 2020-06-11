@@ -1,0 +1,97 @@
+library(shiny)
+library(nycflights13)
+
+# Write a shiny app which reproduces https://ucdsta141.uc.r.appspot.com/
+# (the web server may need time to warm up sometimes, just be patient).
+# You'll need two datasets from nycflights13, `flights` and `airports`
+
+# The histogram shows the distribution of arrival delay time from "origin"
+# to "dest" in different months. If no month is select, it shows the distribution
+# of the whole year.
+
+# The "Summary Statistics" table was computed by using the `summary()` function
+# of the corresponding data.
+
+# We also tally the number of flights from "origin" to "dest" in different months.
+
+# You don't have to 100% reproduce the same app, it's good enough if your app
+# provides the same functionality. However, in order to get full credits,
+# your app should also handle the following edge cases,
+
+# 1. Some combinations of routes do not exist.
+# 2. Some routes may have only flights in certain months.
+#    For example, JFK to Albuquerque only had flights from April to December.
+# 3. Your app should in general free of bugs and errors.
+
+#three options for the origin
+#interactive menu for the destination 
+#for the month, it depends on both the origin and the destination 
+#observeEvent
+flights.s <- flights %>% select(month, arr_delay, origin, dest)
+airports.s <- airports %>%  select(faa, name)
+together <- flights.s %>% inner_join(airports.s, by = c("origin" = "faa")) %>% rename(origin.name = name) %>% 
+  inner_join(airports.s, by = c("dest" = "faa")) %>%  rename(dest.name = name)
+original_airport <- together %>% pull(origin.name) %>% unique()
+names(original_airport) <- original_airport
+
+
+ui <- fluidPage(
+  titlePanel("Arrival Delay"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("oriname", "Origin", choices = original_airport),
+      uiOutput("destcontrol"),
+      uiOutput("monthcontrol")
+    ),
+    mainPanel(
+      plotOutput("histo"),
+      p("Monthly Flights"),
+      tableOutput("mytable"),
+      p("Summary Statistics"),
+      textOutput("summary")
+    )
+  )
+)
+
+server <- function(input, output) {
+  output$destcontrol <- renderUI({
+    currdata <- together %>%  filter(origin.name == input$oriname)
+    selectInput("destname", "Destination", c("-", currdata %>% pull(dest.name) %>% unique() %>% sort()))
+  })
+  output$monthcontrol <- renderUI({
+    req(input$destname)
+    currdata <- together %>%  filter(origin.name == input$oriname & dest.name == input$destname)
+    selectInput("month", "Month", c("-", currdata %>% pull(month) %>% unique() %>% sort()))
+  })
+  output$histo <- renderPlot({
+    req(input$month)
+    if (is.null(input$month) || input$month == "-") {
+      x <- together %>% filter(dest.name == input$destname & origin.name == input$oriname) %>% pull(arr_delay)
+    } else {
+      x <- together %>% filter(dest.name == input$destname & origin.name == input$oriname & month == input$month) %>% pull(arr_delay)
+    }
+    req(x)
+    if (length(x) > 0) {
+      hist(x, breaks = 20, col = "#75AADB", border = "white", xlab = "delay", 
+           main = paste("Arrival delay from", input$oriname, "to", input$destname, "in 2013"))
+    }
+  })
+  output$mytable <- renderTable({
+    req(input$destname)
+    req(input$oriname)
+    monthtable <- together %>% filter(dest.name == input$destname & origin.name == input$oriname) %>% group_by(month) %>% tally()
+    return(monthtable %>% spread(month, n))
+  })
+  output$summary <- renderText({
+    req(input$destname)
+    req(input$oriname)
+    req(input$month)
+    if (is.null(input$month) || input$month == "-") {
+      thisT <- together %>% filter(dest.name == input$destname & origin.name == input$orina) %>% pull(arr_delay) %>% summary()
+    } else {
+      thisT <- together %>% filter(dest.name == input$destname & origin.name == input$oriname & month == input$month) %>% pull(arr_delay) %>% summary()
+    }
+  })
+}
+
+shinyApp(ui, server)

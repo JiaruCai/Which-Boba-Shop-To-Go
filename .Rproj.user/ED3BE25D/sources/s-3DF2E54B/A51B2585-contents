@@ -1,0 +1,19 @@
+library(shiny)
+
+ui <- fluidPage(
+  imageOutput("image1", click = "MyImage")
+)
+
+server <- function(input, output, session) {
+  setwd('https://i.redd.it/73c1qbeab2221.jpg')    #### modify to test
+  output$image1 <- renderImage({
+    list(
+      src = "YOUR_IMAGE.png",                     #### modify to test
+      contentType = "image/png",
+      width = 90,
+      height = 78,
+      alt = "This is alternate text"
+    )}, deleteFile = FALSE)
+  observeEvent(input$MyImage, {print("Hey there")})
+}
+shinyApp(ui, server)

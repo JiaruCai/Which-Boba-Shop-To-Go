@@ -1,0 +1,6 @@
+"0","library(leaflet)"
+"0","library(tidyverse)"
+"0","result %>%"
+"0","  leaflet() %>% "
+"0","  addProviderTiles(providers$CartoDB.Positron) %>%"
+"0","  addMarkers(~coordinates.longitude, ~coordinates.latitude)"

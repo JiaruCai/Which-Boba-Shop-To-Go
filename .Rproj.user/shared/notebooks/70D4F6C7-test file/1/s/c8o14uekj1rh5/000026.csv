@@ -1,0 +1,8 @@
+"0","newCollgeTownList <- c(""Davis"", ""Berkeley"",""Los Angeles"", ""Irvine"", ""Merced"", ""Riverside"", ""San Diego"", ""San Francisco"", ""Santa Barbara"", ""Santa Cruz"")"
+"0","Totaltable %>%"
+"0","  filter(location.city %in% newCollgeTownList) %>% "
+"0","  ggplot(aes(x = location.city, y = review_count)) + "
+"0","  geom_point(size = 2, alpha = 0.5) +  "
+"0","  theme_bw() +"
+"0","  theme(axis.text.x = element_text(angle = 45, hjust=1)) +"
+"0","  labs(title = ""Popularity of Boba Shops in Ten UC College Towns and City Nearby"", x = ""College Town"", y = ""Review Counts"") "

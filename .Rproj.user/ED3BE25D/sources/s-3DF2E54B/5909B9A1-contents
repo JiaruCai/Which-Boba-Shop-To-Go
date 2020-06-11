@@ -1,0 +1,239 @@
+---
+title: "test file"
+output: html_document
+---
+## how profitable to switch to a youtuber 
+```{r}
+library(shiny)
+library(dplyr)
+library(tidyverse)
+library(httr)
+library(jsonlite)
+#import and get data
+readRenviron(".Renviron")
+r <- GET(
+  "https://developers.google.com/youtube/v3/docs/channels?",
+  add_headers(Authorization = paste("Bearer", Sys.getenv("YOUTUBE_TOKEN"))),
+  query = list(
+      #key = Sys.getenv("YOUTUBE_TOKEN"),
+      part = "statistics",
+      id = "id"
+    )
+)
+stop_for_status(r)
+json <- content(r, as = "text", encoding = "UTF-8")
+fromJSON(json, flatten = TRUE) %>% select(statistics.viewCount, 
+             statistics.commentCount, 
+             statistics.subscriberCount, 
+             statistics.videoCount) 
+```
+
+
+
+```{r}
+library(shiny)
+library(dplyr)
+library(tidyverse)
+library(httr)
+library(jsonlite)
+#import and get data
+readRenviron(".Renviron")
+r <- GET(
+  "https://api.yelp.com/v3/businesses/search",
+  add_headers(Authorization = paste("Bearer", Sys.getenv("YELP_TOKEN"))),
+  query = list(
+    location = "San Jose",
+    term ="Boba"
+  )
+)
+stop_for_status(r)
+json <- content(r, as = "text", encoding = "UTF-8")
+thisTable <- fromJSON(json, flatten = TRUE)$businesses %>% select(id, name, location.address1, rating, review_count, url) 
+thisTable %>% arrange(desc(review_count)) %>% top_n(1, rating) 
+```
+```{r}
+library(shiny)
+library(dplyr)
+library(tidyverse)
+library(httr)
+library(jsonlite)
+readRenviron(".Renviron")
+r <- GET(
+  "https://api.yelp.com/v3/businesses/search",
+  add_headers(Authorization = paste("Bearer", Sys.getenv("YELP_TOKEN"))),
+  query = list(
+    location = "Davis",
+    term ="Boba"
+  )
+)
+stop_for_status(r)
+json <- content(r, as = "text", encoding = "UTF-8")
+thisTable <- fromJSON(json, flatten = TRUE)$businesses %>% select(id, name, location.address1, rating, review_count, name, price, url) 
+thisTable
+```
+```{r}
+library(shiny)
+library(dplyr)
+library(tidyverse)
+library(httr)
+library(jsonlite)
+readRenviron(".Renviron")
+queryCity <- function(location_city) {
+  r <- GET(
+  "https://api.yelp.com/v3/businesses/search",
+  add_headers(Authorization = paste("Bearer", Sys.getenv("YELP_TOKEN"))),
+  query = list(
+    location = location_city,
+    term ="Boba"
+  )
+)
+stop_for_status(r)
+json <- content(r, as = "text", encoding = "UTF-8")
+thisTable <- fromJSON(json, flatten = TRUE)$businesses %>% select(id, name, location.city, rating, review_count, name, price, url, image_url) 
+return(thisTable)
+}
+
+CollgeTownList <- c("Berkeley","Los Angeles", "Irvine", "Merced", "Riverside", "San Diego", "San Francisco", "Santa Barbara", "Santa Cruz")
+Totaltable <- queryCity("Davis")
+for (i in CollgeTownList){
+  tableGot <- queryCity(i)
+  Totaltable <- Totaltable %>% rbind(tableGot)
+}
+Totaltable
+```
+```{r}
+library(shiny)
+library(dplyr)
+library(tidyverse)
+library(httr)
+library(jsonlite)
+readRenviron(".Renviron")
+queryCity <- function(location_city) {
+  r <- GET(
+  "https://api.yelp.com/v3/businesses/search",
+  add_headers(Authorization = paste("Bearer", Sys.getenv("YELP_TOKEN"))),
+  query = list(
+    location = location_city,
+    term ="Boba"
+  )
+)
+stop_for_status(r)
+json <- content(r, as = "text", encoding = "UTF-8")
+thisTable <- fromJSON(json, flatten = TRUE)$businesses %>% select(id, name, location.city, rating, review_count, name, price, url, image_url, coordinates.latitude, coordinates.longitude) 
+return(thisTable)
+}
+result <- queryCity("Davis")
+result
+```
+```{r}
+library(leaflet)
+library(tidyverse)
+
+result %>%
+  leaflet() %>% 
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addMarkers(~coordinates.longitude, ~coordinates.latitude)
+```
+
+
+```{r}
+x <- result %>% filter(location.city == "Davis") %>% select(name, review_count)
+nrow(x)
+```
+```{r}
+library(leaflet)
+library(tidyverse)
+
+nyc_arrests %>%
+  filter(OFNS_DESC == "RAPE" & ARREST_BORO == "M") %>%
+  leaflet() %>% 
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addMarkers(~Longitude, ~Latitude)
+```
+
+```{r}
+newCollgeTownList <- c("Davis", "Berkeley","Los Angeles", "Irvine", "Merced", "Riverside", "San Diego", "San Francisco", "Santa Barbara", "Santa Cruz")
+Totaltable %>%
+  filter(location.city %in% newCollgeTownList) %>% 
+  ggplot(aes(x = location.city, y = review_count)) + 
+  geom_point(size = 2, alpha = 0.5) +  
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+  labs(title = "Popularity of Boba Shops in Ten UC College Towns and City Nearby", x = "College Town", y = "Review Counts") 
+```
+```{r}
+####code below subject to be deleted 
+readRenviron(".Renviron")
+r <- GET(
+  "https://api.yelp.com/v3/businesses/search",
+  add_headers(Authorization = paste("Bearer", Sys.getenv("YELP_TOKEN"))),
+  query = list(
+    location = "San Jose",
+    term ="Boba"
+  )
+)
+stop_for_status(r)
+json <- content(r, as = "text", encoding = "UTF-8")
+thisTable <- fromJSON(json, flatten = TRUE)$businesses %>% select(id, name, location.address1, rating, review_count, url, coordinates) 
+top_1_boba <- thisTable %>% arrange(desc(review_count)) %>% top_n(1, rating) 
+####subject to be deleted 
+```
+
+```{r}
+library(shiny)
+
+ui <- pageWithSidebar(
+  headerPanel("renderImage example"),
+  sidebarPanel(
+    sliderInput("obs", "Number of observations:",
+                min = 0, max = 1000,  value = 500)
+  ),
+  mainPanel(
+    # Use imageOutput to place the image on the page
+    imageOutput("myImage")
+  )
+)
+
+server <- function(input, output, session) {
+  output$myImage <- renderImage({
+    # A temp file to save the output.
+    # This file will be removed later by renderImage
+    outfile <- tempfile(fileext = '.png')
+
+    # Generate the PNG
+    png(outfile, width = 400, height = 300)
+    hist(rnorm(input$obs), main = "Generated in renderImage()")
+    dev.off()
+
+    # Return a list containing the filename
+    list(src = outfile,
+         contentType = 'image/png',
+         width = 400,
+         height = 300,
+         alt = "This is alternate text")
+  }, deleteFile = TRUE)
+}
+
+shinyApp(ui, server)
+```
+
+```{r}
+textOutput("image")
+imageOutput("myImage")
+
+###part 3 unsuccessful
+  output$image <- renderText({
+    paste("Enjoy a picture from", toReturn)
+  })
+  
+  output$myImage <- renderImage({
+    # A temp file to save the output.
+    # This file will be removed later by renderImage
+    req(input$cityname)
+    req(input$opt1)
+    req(input$opt2)
+    src <- Totaltable %>% filter(name == recorder & location.city == input$cityname)
+    src <- src$image_url
+    img = list(src, contentType = "Images/jpeg")})
+```
+
